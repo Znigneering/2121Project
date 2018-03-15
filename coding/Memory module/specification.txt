@@ -1,0 +1,10 @@
+1. when ma_in = 1, 
+	ma <= cpu_bus
+2. when md_rd = 1
+	md <= memory_bus
+3. when md_cupbus = 1
+	md <= cpu_bus
+4. when md_wr = 1
+	memory_bus <= md
+5. when md_out = 1
+	cpu_bus <= md
