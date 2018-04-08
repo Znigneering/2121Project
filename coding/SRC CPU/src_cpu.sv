@@ -16,17 +16,21 @@ module SrcCpu (
   reg [31:0] pc = 0;
   reg [31:0] ir;
   reg pc_out = 0;
-  reg ir_in = 0;
-  reg pc_in = 0;
   
   assign cpu_bus = pc_out ? pc : 32'bz;
-  assign pc = pc_in ? cpu_bus : 32'bz;
-  
-  
-  assign ir = ir_in ? cpu_bus : 32'bz;
   
   reg [31:0] rs [31:0];
+  reg [31:0] rs_sel = 0 ;
   
+  generate
+    genvar i;
+    for (i=0; i<32; i = i + 1)
+      begin: gen1
+      	assign cpu_bus = rs_sel[i] ? rs[i] : 32'bz;
+      end
+  endgenerate
+
+
   wire [4:0] opcode = ir[31:27];
   wire [4:0] ra = ir[26:22];
   wire [4:0] rb = ir[21:17];
@@ -42,6 +46,7 @@ module SrcCpu (
   reg md_in = 0;
   reg md_out = 0;
   
+  
   assign read = m_read;
   assign enable = m_enable;
   
@@ -53,7 +58,6 @@ module SrcCpu (
     case (state)
       0 : begin
         pc_out <= 1;
-        ir_in <= 1;
         ma_in <= 1;
         state <= 1;
         $display("ir = %d", ir);
@@ -68,10 +72,15 @@ module SrcCpu (
       end
       2 : begin
         ir <= cpu_bus;
+        m_read <= 0;
+        m_enable <= 0;
+        md_out <= 0;
         state <= 3;
         pc <= pc + 1;
       end
       3 : begin
+        rs[ra] <= 32'hee3;
+        rs_sel[ra] = 1;
         $display("ir = %08h", ir);
         $display("opcode = %d", opcode);
         $display("ra = %d", ra);
