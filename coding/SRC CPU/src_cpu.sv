@@ -30,7 +30,6 @@ module SrcCpu (
       end
   endgenerate
 
-
   wire [4:0] opcode = ir[31:27];
   wire [4:0] ra = ir[26:22];
   wire [4:0] rb = ir[21:17];
@@ -38,20 +37,35 @@ module SrcCpu (
   wire [16:0] c2 = ir[16:0];
   
   wire [31:0] cpu_bus;
-  
-  
+  //MEMORY MOUDULE
   reg m_read = 0;
   reg m_enable = 0;
   reg ma_in = 0;
   reg md_in = 0;
   reg md_out = 0;
-  
-  
+    
   assign read = m_read;
   assign enable = m_enable;
   
-  SrcMemoryController memc(cpu_bus, mem_bus, ma_in, md_in, md_out, read, enable, address);
+  SrcMemoryController memc(cpu_bus, mem_bus, ma_in, md_in, md_out, read, enable, 	address);
+  //CPU MOUDULE
+  reg a_in,
+  reg c_in = 0;
+  reg add = 0;
+  reg sub = 0;
+  reg a_and_b = 0;
+  reg a_or_b = 0;
+  reg shr = 0;
+  reg shra = 0;
+  reg shl = 0;
+  reg not_a = 0;
+  reg c_eq_b = 0;
+  reg inc_4 = 0;
+  reg c_out = 0;
   
+  SrcAlu alu(cpu_bus,a_in,c_in,add,sub,a_and_b,a_or_b,shr,shra,shl,not_a,c_eq_b,
+             inc_4,c_out);
+    
   reg [31:0] state = 0;
   
   always @(posedge clk) begin
@@ -64,30 +78,32 @@ module SrcCpu (
       end
       1 : begin
         pc_out <= 0;
+        pc <= pc + 1;
+        
         ma_in <= 0;
         m_read <= 1;
         m_enable <= 1;
         md_out <= 1;
+        
         state <= 2;
       end
       2 : begin
         ir <= cpu_bus;
-        m_read <= 0;
-        m_enable <= 0;
-        md_out <= 0;
         state <= 3;
-        pc <= pc + 1;
       end
       3 : begin
-        rs[ra] <= 32'hee3;
-        rs_sel[ra] = 1;
         $display("ir = %08h", ir);
         $display("opcode = %d", opcode);
         $display("ra = %d", ra);
+        $display("rb = %d", ra);
         $display("c2 = %d", c2);
+      end
+      4 : begin
+        
       end
     endcase
   end
   
 
 endmodule
+	
