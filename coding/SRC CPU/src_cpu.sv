@@ -90,85 +90,164 @@ module SrcCpu (
         pc_out <= 1;
         ma_in <= 1;
         state <= 1;
-        $display("ir = %d", ir);
       end
       1 : begin
         pc_out <= 0;
         ma_in <= 0;
+        
         m_read <= 1;
         m_enable <= 1;
         md_out <= 1;
         state <= 2;
       end
+      //get opcode
       2 : begin
-        ir <= cpu_bus;
         m_read <= 0;
         m_enable <= 0;
         md_out <= 0;
-        state <= 3;
+        
+        ir <= cpu_bus;
         pc <= pc + 1;
+        state <= 3;
       end
       3 : begin
-        if (rb == 0)
-          begin
-            rb_out = 1;
+        $display("ir = %d", ir);
+        $display("opcode: %d",opcode);
+        $display("ra: %d",ra);
+        $display("rb: %d",rb);
+        $display("rc: %d",rc);
+        
+        case (opcode)
+          0,1 : begin
+            if (rb == 0)
+                rb_out = 1;
+            else
+                rs_sel[rb] =1;
+            a_in = 1;
           end
-        else
-          begin
-            rs_sel[rb] =1;
+          
+          11,12 : begin
+            rs_sel[rb] = 1;
+            a_in = 1;
           end
-        a_in = 1;
+        endcase
         state <= 4;
       end
       4: begin
-        a_in=0;
-        if(rb == 0)
-          begin
-            rb_out <= 0;
+        case (opcode)
+          0,1 : begin
+            a_in=0;
+            if(rb == 0)
+                rb_out <= 0;
+            else
+                rs_sel[rb] <= 0;
+
+            c2_out <= 1;
+            add <= 1;
+            c_in <= 1;
           end
-        else
-          begin
+          
+          11,12 : begin
             rs_sel[rb] <= 0;
+            a_in = 0;
+            
+            rs_sel[rc] <= 1;
           end
-        
-        c2_out <= 1;
-        add <= 1;
-        c_in <= 1;
+        endcase
         state <= 5;
       end
-      5: begin        
-        c2_out <= 0;
-        add <= 0;
-        c_in <= 0;
-        
-        c_out <= 1;
-        ma_in <= 1;
+      5: begin  
+        case (opcode)
+          0,1 : begin
+            c2_out <= 0;
+            add <= 0;
+            c_in <= 0;
+
+            c_out <= 1;
+            ma_in <= 1;
+          end
+          
+          11,12 : begin
+            rs_sel[rb] <= 0;
+            a_in = 0;
+            
+            rs_sel[rc] <= 1;
+            if (opcode == 11)
+	          add = 1;
+            else
+              sub = 1;
+            c_in = 1;
+          end
+        endcase
         state <= 6;
       end
       6: begin
-        c_out <= 0;
-        ma_in <= 0;
-        
-        m_read <= 1;
-        m_enable <= 1;
-        md_out <= 1;
+        case (opcode)
+          0 : begin
+            c_out <= 0;
+            ma_in <= 0;
+
+            m_read <= 1;
+            m_enable <= 1;
+            md_out <= 1;
+          end
+          
+          1 : begin
+          	c_out <= 0;
+            ma_in <= 0;
+            
+            rs_sel[ra] <= 1;
+            md_in = 1;
+          end
+          
+          11,12 : begin
+            rs_sel[rc] <= 0;
+            if (opcode == 11)
+	          add = 0;
+            else
+              sub = 0;
+            c_in = 0;
+            
+            c_out = 1;
+          end
+        endcase
         state <= 7;
       end
       7: begin
-        m_read <= 0;
-        m_enable <= 0;
-        md_out <= 0;
-        rs[ra] <= cpu_bus;
-        state <= 8;
+        case (opcode)
+          0 : begin
+            m_read <= 0;
+            m_enable <= 0;
+            md_out <= 0;
+            
+            rs[ra] <= cpu_bus;
+        	state <= 0;
+          end
+          
+          1 : begin
+            rs_sel[ra] <= 0;
+            md_in = 0;
+            
+            m_enable = 1;
+            state <= 8;
+          end
+          
+          11,12 : begin
+            rs[ra] <= cpu_bus;
+            c_out = 0;
+            
+            state <= 0;
+          end
+        endcase
       end
-
+	  //test timestamp
       8: begin
-        $display("ir = %b", ir);
-        $display("opcode = %d", opcode);
-        $display("ra = %d", ra);
-        $display("c2 = %d", c2);
-        $display("r%d = %d",ra, rs[ra]);
-        state <= 0;
+        case (opcode)
+          1 : begin
+            m_enable <= 0;
+            state <= 0;
+          end
+        endcase
       end
     endcase
   end
